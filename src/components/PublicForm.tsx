@@ -128,7 +128,7 @@ export default function PublicForm() {
       circuit: baseInfo.circuit.trim().toUpperCase(),
       congregation: baseInfo.congregation.trim().toUpperCase(),
       captain_name: baseInfo.captain_name.trim().toUpperCase(),
-      usher_name: u.usher_name.trim().toUpperCase(),
+      usher_name: (u.usher_name || '').trim().toUpperCase(),
       sector: (u.sector || '').trim().toUpperCase(),
       day: u.day,
       start_time: u.start_time,
@@ -153,10 +153,10 @@ export default function PublicForm() {
     doc.text(`Capitán: ${baseInfo.captain_name.trim().toUpperCase()} | Circuito: ${baseInfo.circuit.trim().toUpperCase()}`, 14, 28)
 
     const tableData = allData.map(u => [
-      u.usher_name,
+      u.usher_name || '',
       u.sector || '-',
-      u.day,
-      `${u.start_time.substring(0,5)} - ${u.end_time.substring(0,5)}`,
+      u.day || '',
+      `${(u.start_time || '').substring(0,5)} - ${(u.end_time || '').substring(0,5)}`,
       u.phone || '-'
     ])
 
