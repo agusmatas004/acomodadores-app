@@ -11,12 +11,12 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#9333ea',
     icons: [
       {
-        src: 'https://placehold.co/192x192/9333ea/ffffff.png?text=A',
+        src: '/app-icon.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: 'https://placehold.co/512x512/9333ea/ffffff.png?text=A',
+        src: '/app-icon.png',
         sizes: '512x512',
         type: 'image/png',
       }
