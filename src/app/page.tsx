@@ -1,4 +1,5 @@
 import PublicForm from '@/components/PublicForm'
+import Link from 'next/link'
 
 export default function Home() {
   return (
@@ -14,6 +15,12 @@ export default function Home() {
         </div>
 
         <PublicForm />
+
+        <div className="mt-8 text-center pb-8">
+          <Link href="/admin" className="text-xs text-slate-400 hover:text-primary-600 transition-colors font-medium">
+            Acceso Administración
+          </Link>
+        </div>
       </div>
     </main>
   )
