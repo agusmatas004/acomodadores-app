@@ -100,7 +100,7 @@ export default function PublicForm() {
       circuit: baseInfo.circuit.trim().toUpperCase(),
       congregation: baseInfo.congregation.trim().toUpperCase(),
       captain_name: baseInfo.captain_name.trim().toUpperCase(),
-      usher_name: u.usher_name.trim().toUpperCase(),
+      usher_name: (u.usher_name || '').trim().toUpperCase(),
       sector: (u.sector || '').trim().toUpperCase(),
       day: u.day,
       start_time: u.start_time,
