@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Morado (Purple) */
+  --color-primary-50: #faf5ff;
+  --color-primary-100: #f3e8ff;
+  --color-primary-500: #a855f7;
+  --color-primary-600: #9333ea;
+  --color-primary-700: #7e22ce;
+  --color-primary-900: #581c87;
+
+  --color-day-viernes: #10b981; /* Emerald */
+  --color-day-sabado: #f59e0b; /* Amber */
+  --color-day-domingo: #3b82f6; /* Blue */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@custom-variant dark (&:is(.dark *));
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f8fafc;
+    --foreground: #0f172a;
+  }
+  
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-3 bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500 outline-none transition-all text-slate-900;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-xl transition-all shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center justify-center;
+  }
+  
+  .badge-viernes {
+    @apply bg-[#10b981]/10 text-[#10b981] font-medium px-3 py-1 rounded-full text-xs;
+  }
+  
+  .badge-sabado {
+    @apply bg-[#f59e0b]/10 text-[#f59e0b] font-medium px-3 py-1 rounded-full text-xs;
+  }
+  
+  .badge-domingo {
+    @apply bg-[#3b82f6]/10 text-[#3b82f6] font-medium px-3 py-1 rounded-full text-xs;
+  }
+}
+
+/* Animaciones personalizadas para el Login Glassmorphism */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
