@@ -40,6 +40,10 @@ export default function AdminTable() {
   const [filterDay, setFilterDay] = useState('')
   const [filterName, setFilterName] = useState('')
   
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  
   // Edición
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFormData, setEditFormData] = useState<Partial<UsherData>>({})
@@ -148,7 +152,14 @@ export default function AdminTable() {
         // Luego por horario de inicio
         return a.start_time.localeCompare(b.start_time)
       })
-  }, [data, filterProv, filterCirc, filterCong, filterDay])
+  }, [data, filterProv, filterCirc, filterCong, filterDay, filterName])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterProv, filterCirc, filterCong, filterDay, filterName])
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage))
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const getBadgeClass = (day: string) => {
     switch(day.toLowerCase()) {
@@ -258,7 +269,7 @@ export default function AdminTable() {
               <th className="px-6 py-4 font-bold text-xs text-slate-500 uppercase tracking-wider min-w-[180px]">Congregación</th>
               <th className="px-6 py-4 font-bold text-xs text-slate-500 uppercase tracking-wider min-w-[160px]">Circuito & Prov.</th>
               <th className="px-6 py-4 font-bold text-xs text-slate-500 uppercase tracking-wider min-w-[180px]">Capitán</th>
-              <th className="px-6 py-4 font-bold text-xs text-slate-500 uppercase tracking-wider text-center min-w-[120px]">Acciones</th>
+              <th className="px-6 py-4 font-bold text-xs text-slate-500 uppercase tracking-wider text-center min-w-[120px] sticky right-0 bg-slate-50 z-20 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100/80">
@@ -298,7 +309,7 @@ export default function AdminTable() {
                 <td className="px-4 py-3">
                   <input type="text" placeholder="Capitán" className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.captain_name} onChange={e => setNewRowData({...newRowData, captain_name: e.target.value})} />
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-4 py-3 text-center sticky right-0 bg-emerald-50 z-10 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] border-l border-emerald-100">
                   <div className="flex items-center justify-center gap-2">
                     <button onClick={handleAddNewSave} className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-xl transition-all shadow-md shadow-emerald-500/20"><Check className="w-4 h-4" /></button>
                     <button onClick={() => setIsAdding(false)} className="bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 p-2 rounded-xl transition-all"><X className="w-4 h-4" /></button>
@@ -309,7 +320,7 @@ export default function AdminTable() {
 
             {filteredData.length === 0 && !isAdding ? (
               <tr>
-                <td colSpan={6} className="px-6 py-16 text-center">
+                <td colSpan={7} className="px-6 py-16 text-center">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
                     <Search className="w-8 h-8 text-slate-300" />
                   </div>
@@ -317,7 +328,7 @@ export default function AdminTable() {
                   <p className="text-slate-400 text-sm mt-1">Prueba ajustando los filtros de búsqueda.</p>
                 </td>
               </tr>
-            ) : filteredData.map(row => {
+            ) : paginatedData.map(row => {
               const isEditing = editingId === row.id
               
               if (isEditing) {
@@ -355,7 +366,7 @@ export default function AdminTable() {
                     <td className="px-4 py-3">
                       <input type="text" className="w-full px-3 py-2 bg-white border border-primary-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none" value={editFormData.captain_name} onChange={e => setEditFormData({...editFormData, captain_name: e.target.value})} />
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-center sticky right-0 bg-primary-50 z-10 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)] border-l border-primary-100">
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={handleEditSave} className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-xl transition-all shadow-md shadow-emerald-500/20"><Check className="w-4 h-4" /></button>
                         <button onClick={() => setEditingId(null)} className="bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 p-2 rounded-xl transition-all"><X className="w-4 h-4" /></button>
@@ -400,7 +411,7 @@ export default function AdminTable() {
                       {row.captain_name}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4 text-center sticky right-0 bg-white group-hover:bg-slate-50/80 transition-colors z-10 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">
                     <div className="flex items-center justify-center gap-1 transition-opacity">
                       <button onClick={() => handleEditClick(row)} className="text-slate-400 hover:text-primary-600 p-2 rounded-xl hover:bg-primary-50 transition-colors" title="Editar">
                         <Edit2 className="w-4 h-4" />
@@ -418,9 +429,27 @@ export default function AdminTable() {
       </div>
       
       {/* Footer Info */}
-      <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex items-center justify-between">
-        <p className="text-xs text-slate-400 font-medium">Actualización en tiempo real activa</p>
-        <p className="text-xs text-slate-500 font-semibold bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
+      <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+            disabled={currentPage === 1} 
+            className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-sm font-semibold text-slate-600 disabled:opacity-50 disabled:hover:bg-white transition-colors shadow-sm"
+          >
+            Anterior
+          </button>
+          <div className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 shadow-sm">
+            Pág {currentPage} de {totalPages}
+          </div>
+          <button 
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+            disabled={currentPage === totalPages || filteredData.length === 0} 
+            className="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-sm font-semibold text-slate-600 disabled:opacity-50 disabled:hover:bg-white transition-colors shadow-sm"
+          >
+            Siguiente
+          </button>
+        </div>
+        <p className="text-sm text-slate-500 font-semibold bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
           Total: <span className="text-primary-600">{filteredData.length}</span> acomodadores
         </p>
       </div>
