@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AdminTable from '@/components/AdminTable'
+import ConfigModal from '@/components/ConfigModal'
 import { Loader2, LogOut, LayoutDashboard, Settings } from 'lucide-react'
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true)
+  const [isConfigOpen, setIsConfigOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -47,7 +49,10 @@ export default function AdminPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="text-slate-400 hover:text-primary-600 transition-colors p-2 rounded-full hover:bg-primary-50" title="Configuración">
+            <button 
+              onClick={() => setIsConfigOpen(true)}
+              className="text-slate-400 hover:text-primary-600 transition-colors p-2 rounded-full hover:bg-primary-50" title="Configuración"
+            >
               <Settings className="w-5 h-5" />
             </button>
             <div className="w-px h-6 bg-slate-200"></div>
@@ -79,6 +84,12 @@ export default function AdminPage() {
         
         <AdminTable />
       </main>
+
+      <ConfigModal 
+        isOpen={isConfigOpen} 
+        onClose={() => setIsConfigOpen(false)} 
+      />
     </div>
   )
 }
+

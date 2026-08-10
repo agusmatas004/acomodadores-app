@@ -38,6 +38,7 @@ export default function AdminTable() {
   const [filterCirc, setFilterCirc] = useState('')
   const [filterCong, setFilterCong] = useState('')
   const [filterDay, setFilterDay] = useState('')
+  const [filterName, setFilterName] = useState('')
   
   // Edición
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -135,6 +136,7 @@ export default function AdminTable() {
         u.province.toLowerCase().includes(filterProv.toLowerCase()) &&
         u.circuit.toLowerCase().includes(filterCirc.toLowerCase()) &&
         u.congregation.toLowerCase().includes(filterCong.toLowerCase()) &&
+        u.usher_name.toLowerCase().includes(filterName.toLowerCase()) &&
         (filterDay === '' || u.day === filterDay)
       )
       .sort((a, b) => {
@@ -181,6 +183,16 @@ export default function AdminTable() {
       <div className="p-5 sm:p-6 border-b border-slate-100 bg-white flex flex-col xl:flex-row xl:items-center justify-between gap-5">
         
         <div className="flex flex-wrap items-center gap-3">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
+            </div>
+            <input 
+              type="text" placeholder="Buscar acomodador..." 
+              className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all w-full sm:w-48 placeholder-slate-400 font-medium text-slate-700"
+              value={filterName} onChange={e => setFilterName(e.target.value)}
+            />
+          </div>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <MapPin className="h-4 w-4 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
@@ -389,7 +401,7 @@ export default function AdminTable() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-center gap-1 transition-opacity">
                       <button onClick={() => handleEditClick(row)} className="text-slate-400 hover:text-primary-600 p-2 rounded-xl hover:bg-primary-50 transition-colors" title="Editar">
                         <Edit2 className="w-4 h-4" />
                       </button>
