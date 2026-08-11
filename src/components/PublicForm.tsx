@@ -7,6 +7,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const DAYS = ['Viernes', 'Sábado', 'Domingo']
+const DAY_OPTIONS = [...DAYS, 'Los 3 días']
 
 const DAY_ORDER: Record<string, number> = {
   'viernes': 1,
@@ -95,18 +96,24 @@ export default function PublicForm() {
       return
     }
 
-    const dataToInsert = validUshers.map(u => ({
-      province: baseInfo.province.trim().toUpperCase(),
-      circuit: baseInfo.circuit.trim().toUpperCase(),
-      congregation: baseInfo.congregation.trim().toUpperCase(),
-      captain_name: baseInfo.captain_name.trim().toUpperCase(),
-      usher_name: (u.usher_name || '').trim().toUpperCase(),
-      sector: (u.sector || '').trim().toUpperCase(),
-      day: u.day,
-      start_time: u.start_time,
-      end_time: u.end_time,
-      phone: u.phone || ''
-    }))
+    const dataToInsert = validUshers.flatMap(u => {
+      const baseRecord = {
+        province: baseInfo.province.trim().toUpperCase(),
+        circuit: baseInfo.circuit.trim().toUpperCase(),
+        congregation: baseInfo.congregation.trim().toUpperCase(),
+        captain_name: baseInfo.captain_name.trim().toUpperCase(),
+        usher_name: (u.usher_name || '').trim().toUpperCase(),
+        sector: (u.sector || '').trim().toUpperCase(),
+        start_time: u.start_time,
+        end_time: u.end_time,
+        phone: u.phone || ''
+      }
+      
+      if (u.day === 'Los 3 días') {
+        return DAYS.map(d => ({ ...baseRecord, day: d }))
+      }
+      return [{ ...baseRecord, day: u.day }]
+    })
 
     setLoading(true)
     setErrorMsg('')
@@ -122,19 +129,25 @@ export default function PublicForm() {
 
   const handleDownloadPDF = () => {
     const validUshers = newUshers.filter(u => u.usher_name?.trim() !== '')
-    const submittedData = validUshers.map(u => ({
-      ...baseInfo,
-      province: baseInfo.province.trim().toUpperCase(),
-      circuit: baseInfo.circuit.trim().toUpperCase(),
-      congregation: baseInfo.congregation.trim().toUpperCase(),
-      captain_name: baseInfo.captain_name.trim().toUpperCase(),
-      usher_name: (u.usher_name || '').trim().toUpperCase(),
-      sector: (u.sector || '').trim().toUpperCase(),
-      day: u.day,
-      start_time: u.start_time,
-      end_time: u.end_time,
-      phone: u.phone || ''
-    }))
+    const submittedData = validUshers.flatMap(u => {
+      const baseRecord = {
+        ...baseInfo,
+        province: baseInfo.province.trim().toUpperCase(),
+        circuit: baseInfo.circuit.trim().toUpperCase(),
+        congregation: baseInfo.congregation.trim().toUpperCase(),
+        captain_name: baseInfo.captain_name.trim().toUpperCase(),
+        usher_name: (u.usher_name || '').trim().toUpperCase(),
+        sector: (u.sector || '').trim().toUpperCase(),
+        start_time: u.start_time,
+        end_time: u.end_time,
+        phone: u.phone || ''
+      }
+      
+      if (u.day === 'Los 3 días') {
+        return DAYS.map(d => ({ ...baseRecord, day: d }))
+      }
+      return [{ ...baseRecord, day: u.day }]
+    })
     
     const allData = [...existingUshers, ...submittedData].sort((a, b) => {
       const dayA = DAY_ORDER[a.day?.toLowerCase() || ''] || 99
@@ -329,7 +342,7 @@ export default function PublicForm() {
                       className="input-field py-2"
                       value={usher.day} onChange={e => handleRowChange(index, 'day', e.target.value)}
                     >
-                      {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                      {DAY_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
 

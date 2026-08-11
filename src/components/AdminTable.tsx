@@ -161,6 +161,22 @@ export default function AdminTable() {
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage))
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
+  const getVisiblePages = () => {
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
   const getBadgeClass = (day: string) => {
     switch(day.toLowerCase()) {
       case 'viernes': return 'badge-viernes'
@@ -438,9 +454,27 @@ export default function AdminTable() {
           >
             Anterior
           </button>
-          <div className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 shadow-sm">
+          
+          <div className="hidden sm:flex items-center gap-1">
+            {getVisiblePages().map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors shadow-sm border ${
+                  currentPage === page 
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-primary-500/20' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <div className="sm:hidden px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 shadow-sm">
             Pág {currentPage} de {totalPages}
           </div>
+
           <button 
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
             disabled={currentPage === totalPages || filteredData.length === 0} 
