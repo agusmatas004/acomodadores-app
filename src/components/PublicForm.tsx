@@ -7,7 +7,6 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const DAYS = ['Viernes', 'Sábado', 'Domingo']
-const DAY_OPTIONS = [...DAYS, 'Los 3 días']
 
 const DAY_ORDER: Record<string, number> = {
   'viernes': 1,
@@ -36,6 +35,8 @@ type UsherData = {
   phone: string
 }
 
+type FormUsherData = Partial<UsherData & { days: string[] }>
+
 export default function PublicForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
@@ -49,7 +50,7 @@ export default function PublicForm() {
   })
 
   const [existingUshers, setExistingUshers] = useState<UsherData[]>([])
-  const [newUshers, setNewUshers] = useState<Partial<UsherData>[]>([])
+  const [newUshers, setNewUshers] = useState<FormUsherData[]>([])
 
   const handleBaseSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +64,7 @@ export default function PublicForm() {
         baseInfo.captain_name
       )
       setExistingUshers(existing as UsherData[])
-      setNewUshers([{ usher_name: '', sector: '', day: 'Viernes', start_time: '08:00', end_time: '10:00', phone: '' }])
+      setNewUshers([{ usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', phone: '' }])
       setStep(2)
     } catch (err: any) {
       setErrorMsg('Error al verificar datos: ' + err.message)
@@ -75,7 +76,7 @@ export default function PublicForm() {
   const handleAddRow = () => {
     setNewUshers([
       ...newUshers,
-      { usher_name: '', sector: '', day: 'Viernes', start_time: '08:00', end_time: '10:00', phone: '' }
+      { usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', phone: '' }
     ])
   }
 
@@ -83,7 +84,7 @@ export default function PublicForm() {
     setNewUshers(newUshers.filter((_, i) => i !== index))
   }
 
-  const handleRowChange = (index: number, field: keyof UsherData, value: string) => {
+  const handleRowChange = (index: number, field: keyof FormUsherData, value: any) => {
     const updated = [...newUshers]
     updated[index] = { ...updated[index], [field]: value }
     setNewUshers(updated)
@@ -108,11 +109,8 @@ export default function PublicForm() {
         end_time: u.end_time,
         phone: u.phone || ''
       }
-      
-      if (u.day === 'Los 3 días') {
-        return DAYS.map(d => ({ ...baseRecord, day: d }))
-      }
-      return [{ ...baseRecord, day: u.day }]
+      const selectedDays = u.days && u.days.length > 0 ? u.days : ['Viernes']
+      return selectedDays.map(d => ({ ...baseRecord, day: d }))
     })
 
     setLoading(true)
@@ -142,11 +140,8 @@ export default function PublicForm() {
         end_time: u.end_time,
         phone: u.phone || ''
       }
-      
-      if (u.day === 'Los 3 días') {
-        return DAYS.map(d => ({ ...baseRecord, day: d }))
-      }
-      return [{ ...baseRecord, day: u.day }]
+      const selectedDays = u.days && u.days.length > 0 ? u.days : ['Viernes']
+      return selectedDays.map(d => ({ ...baseRecord, day: d }))
     })
     
     const allData = [...existingUshers, ...submittedData].sort((a, b) => {
@@ -338,12 +333,30 @@ export default function PublicForm() {
                   </div>
                   
                   <div className="md:col-span-3">
-                    <select 
-                      className="input-field py-2"
-                      value={usher.day} onChange={e => handleRowChange(index, 'day', e.target.value)}
-                    >
-                      {DAY_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {DAYS.map(d => {
+                        const isSelected = usher.days?.includes(d)
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => {
+                              const currentDays = usher.days || []
+                              if (currentDays.includes(d)) {
+                                if (currentDays.length > 1) {
+                                  handleRowChange(index, 'days', currentDays.filter(day => day !== d))
+                                }
+                              } else {
+                                handleRowChange(index, 'days', [...currentDays, d])
+                              }
+                            }}
+                            className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-colors ${isSelected ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                          >
+                            {d}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   <div className="md:col-span-3">

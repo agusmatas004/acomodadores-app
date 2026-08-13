@@ -50,8 +50,8 @@ export default function AdminTable() {
 
   // Añadir
   const [isAdding, setIsAdding] = useState(false)
-  const [newRowData, setNewRowData] = useState<Partial<UsherData>>({
-    usher_name: '', sector: '', day: 'Viernes', start_time: '08:00', end_time: '10:00', 
+  const [newRowData, setNewRowData] = useState<Partial<UsherData> & { days?: string[] }>({
+    usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', 
     province: '', circuit: '', congregation: '', captain_name: '', phone: ''
   })
 
@@ -100,7 +100,7 @@ export default function AdminTable() {
   }
 
   const handleAddNewSave = async () => {
-    const uppercasedData = {
+    const baseData = {
       ...newRowData,
       province: newRowData.province?.trim().toUpperCase(),
       circuit: newRowData.circuit?.trim().toUpperCase(),
@@ -109,9 +109,25 @@ export default function AdminTable() {
       usher_name: newRowData.usher_name?.trim().toUpperCase(),
       sector: newRowData.sector?.trim().toUpperCase(),
     }
-    const { error } = await supabase.from('ushers').insert([uppercasedData])
+    
+    // Eliminar 'days' o 'day' del baseData para no mandarlo tal cual si es array
+    delete (baseData as any).days;
+    delete (baseData as any).day;
+
+    const selectedDays = newRowData.days && newRowData.days.length > 0 ? newRowData.days : ['Viernes']
+    
+    const dataToInsert = selectedDays.map(d => ({
+      ...baseData,
+      day: d
+    }))
+
+    const { error } = await supabase.from('ushers').insert(dataToInsert)
     if (!error) {
       setIsAdding(false)
+      setNewRowData({
+        usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', 
+        province: '', circuit: '', congregation: '', captain_name: '', phone: ''
+      })
     } else {
       alert('Error al añadir: ' + error.message)
     }
@@ -304,9 +320,30 @@ export default function AdminTable() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-2">
-                    <select className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.day} onChange={e => setNewRowData({...newRowData, day: e.target.value})}>
-                      {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DAYS.map(d => {
+                        const isSelected = (newRowData.days || []).includes(d)
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => {
+                              const currentDays = newRowData.days || []
+                              if (currentDays.includes(d)) {
+                                if (currentDays.length > 1) {
+                                  setNewRowData({ ...newRowData, days: currentDays.filter(day => day !== d) })
+                                }
+                              } else {
+                                setNewRowData({ ...newRowData, days: [...currentDays, d] })
+                              }
+                            }}
+                            className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-colors ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                          >
+                            {d}
+                          </button>
+                        )
+                      })}
+                    </div>
                     <div className="flex gap-2">
                       <input type="time" className="w-full px-2 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.start_time} onChange={e => setNewRowData({...newRowData, start_time: e.target.value})} />
                       <input type="time" className="w-full px-2 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.end_time} onChange={e => setNewRowData({...newRowData, end_time: e.target.value})} />
