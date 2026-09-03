@@ -119,6 +119,8 @@ export default function PublicForm() {
         captain_name: baseInfo.captain_name.trim().toUpperCase(),
         usher_name: (u.usher_name || '').trim().toUpperCase(),
         sector: (u.sector || '').trim().toUpperCase(),
+        phone: u.phone || ''
+      }
       const selectedDays = u.days && u.days.length > 0 ? u.days : ['Viernes']
       return selectedDays.map(d => ({ 
         ...baseRecord, 
