@@ -39,6 +39,7 @@ export default function AdminTable() {
   const [filterCong, setFilterCong] = useState('')
   const [filterDay, setFilterDay] = useState('')
   const [filterName, setFilterName] = useState('')
+  const [filterCaptain, setFilterCaptain] = useState('')
   
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -86,6 +87,9 @@ export default function AdminTable() {
 
   const handleEditSave = async () => {
     if (!editingId) return
+    const originalRow = data.find(u => u.id === editingId)
+    if (!originalRow) return
+
     const uppercasedData = {
       ...editFormData,
       province: editFormData.province?.trim().toUpperCase(),
@@ -95,8 +99,30 @@ export default function AdminTable() {
       usher_name: editFormData.usher_name?.trim().toUpperCase(),
       sector: editFormData.sector?.trim().toUpperCase(),
     }
+    
     const { error } = await supabase.from('ushers').update(uppercasedData).eq('id', editingId)
-    if (!error) setEditingId(null)
+    
+    if (!error) {
+      const baseChanged = 
+        originalRow.province !== uppercasedData.province ||
+        originalRow.circuit !== uppercasedData.circuit ||
+        originalRow.congregation !== uppercasedData.congregation ||
+        originalRow.captain_name !== uppercasedData.captain_name
+
+      if (baseChanged) {
+        await supabase.from('ushers').update({
+          province: uppercasedData.province,
+          circuit: uppercasedData.circuit,
+          congregation: uppercasedData.congregation,
+          captain_name: uppercasedData.captain_name
+        }).match({ 
+          captain_name: originalRow.captain_name,
+          congregation: originalRow.congregation
+        })
+      }
+      
+      setEditingId(null)
+    }
   }
 
   const handleAddNewSave = async () => {
@@ -160,6 +186,7 @@ export default function AdminTable() {
         u.circuit.toLowerCase().includes(filterCirc.toLowerCase()) &&
         u.congregation.toLowerCase().includes(filterCong.toLowerCase()) &&
         u.usher_name.toLowerCase().includes(filterName.toLowerCase()) &&
+        u.captain_name.toLowerCase().includes(filterCaptain.toLowerCase()) &&
         (filterDay === '' || u.day === filterDay)
       )
       .sort((a, b) => {
@@ -171,11 +198,11 @@ export default function AdminTable() {
         // Luego por horario de inicio
         return a.start_time.localeCompare(b.start_time)
       })
-  }, [data, filterProv, filterCirc, filterCong, filterDay, filterName])
+  }, [data, filterProv, filterCirc, filterCong, filterDay, filterName, filterCaptain])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterProv, filterCirc, filterCong, filterDay, filterName])
+  }, [filterProv, filterCirc, filterCong, filterDay, filterName, filterCaptain])
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage))
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
@@ -267,6 +294,16 @@ export default function AdminTable() {
               type="text" placeholder="Congregación" 
               className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all w-full sm:w-44 placeholder-slate-400 font-medium text-slate-700"
               value={filterCong} onChange={e => setFilterCong(e.target.value)}
+            />
+          </div>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <User className="h-4 w-4 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
+            </div>
+            <input 
+              type="text" placeholder="Capitán" 
+              className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all w-full sm:w-36 placeholder-slate-400 font-medium text-slate-700"
+              value={filterCaptain} onChange={e => setFilterCaptain(e.target.value)}
             />
           </div>
           <div className="relative group">
@@ -526,6 +563,17 @@ export default function AdminTable() {
           </button>
           
           <div className="hidden sm:flex items-center gap-1">
+            {getVisiblePages()[0] > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors shadow-sm border bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  1
+                </button>
+                {getVisiblePages()[0] > 2 && <span className="px-1 text-slate-400 text-sm">...</span>}
+              </>
+            )}
             {getVisiblePages().map(page => (
               <button
                 key={page}
