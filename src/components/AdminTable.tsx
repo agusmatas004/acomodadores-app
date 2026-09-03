@@ -50,8 +50,8 @@ export default function AdminTable() {
 
   // Añadir
   const [isAdding, setIsAdding] = useState(false)
-  const [newRowData, setNewRowData] = useState<Partial<UsherData> & { days?: string[] }>({
-    usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', 
+  const [newRowData, setNewRowData] = useState<Partial<UsherData> & { days?: string[], schedules?: Record<string, { start_time: string, end_time: string }> }>({
+    usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, 
     province: '', circuit: '', congregation: '', captain_name: '', phone: ''
   })
 
@@ -110,22 +110,25 @@ export default function AdminTable() {
       sector: newRowData.sector?.trim().toUpperCase(),
     }
     
-    // Eliminar 'days' o 'day' del baseData para no mandarlo tal cual si es array
+    // Eliminar 'days' o 'day' y 'schedules' del baseData para no mandarlo tal cual
     delete (baseData as any).days;
     delete (baseData as any).day;
+    delete (baseData as any).schedules;
 
     const selectedDays = newRowData.days && newRowData.days.length > 0 ? newRowData.days : ['Viernes']
     
     const dataToInsert = selectedDays.map(d => ({
       ...baseData,
-      day: d
+      day: d,
+      start_time: newRowData.schedules?.[d]?.start_time || '08:00',
+      end_time: newRowData.schedules?.[d]?.end_time || '10:00'
     }))
 
     const { error } = await supabase.from('ushers').insert(dataToInsert)
     if (!error) {
       setIsAdding(false)
       setNewRowData({
-        usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', 
+        usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, 
         province: '', circuit: '', congregation: '', captain_name: '', phone: ''
       })
     } else {
@@ -334,7 +337,12 @@ export default function AdminTable() {
                                   setNewRowData({ ...newRowData, days: currentDays.filter(day => day !== d) })
                                 }
                               } else {
-                                setNewRowData({ ...newRowData, days: [...currentDays, d] })
+                                const newDays = [...currentDays, d]
+                                const newSchedules = { ...(newRowData.schedules || {}) }
+                                if (!newSchedules[d]) {
+                                  newSchedules[d] = { start_time: '08:00', end_time: '10:00' }
+                                }
+                                setNewRowData({ ...newRowData, days: newDays, schedules: newSchedules })
                               }
                             }}
                             className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-colors ${isSelected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
@@ -344,9 +352,34 @@ export default function AdminTable() {
                         )
                       })}
                     </div>
-                    <div className="flex gap-2">
-                      <input type="time" className="w-full px-2 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.start_time} onChange={e => setNewRowData({...newRowData, start_time: e.target.value})} />
-                      <input type="time" className="w-full px-2 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 outline-none" value={newRowData.end_time} onChange={e => setNewRowData({...newRowData, end_time: e.target.value})} />
+                    <div className="flex flex-col gap-2">
+                      {(newRowData.days || ['Viernes']).map(d => (
+                        <div key={d} className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 w-12">{d.substring(0,3)}</span>
+                          <input 
+                            type="time" 
+                            className="w-full px-2 py-1 bg-white border border-emerald-200 rounded-md text-xs focus:ring-2 focus:ring-emerald-500 outline-none" 
+                            value={newRowData.schedules?.[d]?.start_time || '08:00'} 
+                            onChange={e => {
+                              const newSchedules = { ...(newRowData.schedules || {}) }
+                              if (!newSchedules[d]) newSchedules[d] = { start_time: '08:00', end_time: '10:00' }
+                              newSchedules[d].start_time = e.target.value
+                              setNewRowData({...newRowData, schedules: newSchedules})
+                            }} 
+                          />
+                          <input 
+                            type="time" 
+                            className="w-full px-2 py-1 bg-white border border-emerald-200 rounded-md text-xs focus:ring-2 focus:ring-emerald-500 outline-none" 
+                            value={newRowData.schedules?.[d]?.end_time || '10:00'} 
+                            onChange={e => {
+                              const newSchedules = { ...(newRowData.schedules || {}) }
+                              if (!newSchedules[d]) newSchedules[d] = { start_time: '08:00', end_time: '10:00' }
+                              newSchedules[d].end_time = e.target.value
+                              setNewRowData({...newRowData, schedules: newSchedules})
+                            }} 
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </td>

@@ -35,7 +35,10 @@ type UsherData = {
   phone: string
 }
 
-type FormUsherData = Partial<UsherData & { days: string[] }>
+type FormUsherData = Partial<UsherData & { 
+  days: string[]
+  schedules: Record<string, { start_time: string, end_time: string }>
+}>
 
 export default function PublicForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
@@ -64,7 +67,7 @@ export default function PublicForm() {
         baseInfo.captain_name
       )
       setExistingUshers(existing as UsherData[])
-      setNewUshers([{ usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', phone: '' }])
+      setNewUshers([{ usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, phone: '' }])
       setStep(2)
     } catch (err: any) {
       setErrorMsg('Error al verificar datos: ' + err.message)
@@ -76,7 +79,7 @@ export default function PublicForm() {
   const handleAddRow = () => {
     setNewUshers([
       ...newUshers,
-      { usher_name: '', sector: '', days: ['Viernes'], start_time: '08:00', end_time: '10:00', phone: '' }
+      { usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, phone: '' }
     ])
   }
 
@@ -87,6 +90,17 @@ export default function PublicForm() {
   const handleRowChange = (index: number, field: keyof FormUsherData, value: any) => {
     const updated = [...newUshers]
     updated[index] = { ...updated[index], [field]: value }
+    setNewUshers(updated)
+  }
+
+  const handleScheduleChange = (index: number, day: string, field: 'start_time' | 'end_time', value: string) => {
+    const updated = [...newUshers]
+    const schedules = { ...updated[index].schedules }
+    if (!schedules[day]) {
+      schedules[day] = { start_time: '08:00', end_time: '10:00' }
+    }
+    schedules[day][field] = value
+    updated[index] = { ...updated[index], schedules }
     setNewUshers(updated)
   }
 
@@ -105,12 +119,13 @@ export default function PublicForm() {
         captain_name: baseInfo.captain_name.trim().toUpperCase(),
         usher_name: (u.usher_name || '').trim().toUpperCase(),
         sector: (u.sector || '').trim().toUpperCase(),
-        start_time: u.start_time,
-        end_time: u.end_time,
-        phone: u.phone || ''
-      }
       const selectedDays = u.days && u.days.length > 0 ? u.days : ['Viernes']
-      return selectedDays.map(d => ({ ...baseRecord, day: d }))
+      return selectedDays.map(d => ({ 
+        ...baseRecord, 
+        day: d,
+        start_time: u.schedules?.[d]?.start_time || '08:00',
+        end_time: u.schedules?.[d]?.end_time || '10:00'
+      }))
     })
 
     setLoading(true)
@@ -136,12 +151,15 @@ export default function PublicForm() {
         captain_name: baseInfo.captain_name.trim().toUpperCase(),
         usher_name: (u.usher_name || '').trim().toUpperCase(),
         sector: (u.sector || '').trim().toUpperCase(),
-        start_time: u.start_time,
-        end_time: u.end_time,
         phone: u.phone || ''
       }
       const selectedDays = u.days && u.days.length > 0 ? u.days : ['Viernes']
-      return selectedDays.map(d => ({ ...baseRecord, day: d }))
+      return selectedDays.map(d => ({ 
+        ...baseRecord, 
+        day: d,
+        start_time: u.schedules?.[d]?.start_time || '08:00',
+        end_time: u.schedules?.[d]?.end_time || '10:00'
+      }))
     })
     
     const allData = [...existingUshers, ...submittedData].sort((a, b) => {
@@ -347,7 +365,14 @@ export default function PublicForm() {
                                   handleRowChange(index, 'days', currentDays.filter(day => day !== d))
                                 }
                               } else {
-                                handleRowChange(index, 'days', [...currentDays, d])
+                                const newDays = [...currentDays, d]
+                                const newSchedules = { ...usher.schedules }
+                                if (!newSchedules[d]) {
+                                  newSchedules[d] = { start_time: '08:00', end_time: '10:00' }
+                                }
+                                const updated = [...newUshers]
+                                updated[index] = { ...updated[index], days: newDays, schedules: newSchedules }
+                                setNewUshers(updated)
                               }
                             }}
                             className={`px-2 py-1.5 text-xs font-medium rounded-md border transition-colors ${isSelected ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
@@ -359,22 +384,29 @@ export default function PublicForm() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-3">
-                    <select 
-                      className="input-field py-2"
-                      value={usher.start_time} onChange={e => handleRowChange(index, 'start_time', e.target.value)}
-                    >
-                      {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  
-                  <div className="md:col-span-3">
-                    <select 
-                      className="input-field py-2"
-                      value={usher.end_time} onChange={e => handleRowChange(index, 'end_time', e.target.value)}
-                    >
-                      {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                  <div className="md:col-span-6">
+                    <div className="flex flex-col gap-2">
+                      {(usher.days || ['Viernes']).map(d => (
+                        <div key={d} className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-500 w-16">{d}</span>
+                          <select 
+                            className="input-field py-1 text-sm flex-1"
+                            value={usher.schedules?.[d]?.start_time || '08:00'}
+                            onChange={e => handleScheduleChange(index, d, 'start_time', e.target.value)}
+                          >
+                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                          <span className="text-slate-400 text-xs">-</span>
+                          <select 
+                            className="input-field py-1 text-sm flex-1"
+                            value={usher.schedules?.[d]?.end_time || '10:00'}
+                            onChange={e => handleScheduleChange(index, d, 'end_time', e.target.value)}
+                          >
+                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   
                   <div className="md:col-span-3">
