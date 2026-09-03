@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, Trash2, CheckCircle2, Loader2, Clock, Users, ClipboardList, FileText } from 'lucide-react'
-import { getExistingUshers, saveUshers } from '@/app/actions'
+import { getExistingUshers, saveUshers, updateUshersBaseInfo } from '@/app/actions'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -23,6 +23,7 @@ for (let h = 7; h <= 20; h++) {
 }
 
 type UsherData = {
+  id?: string
   province: string
   circuit: string
   congregation: string
@@ -71,6 +72,32 @@ export default function PublicForm() {
       setStep(2)
     } catch (err: any) {
       setErrorMsg('Error al verificar datos: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateBaseInfo = async () => {
+    if (existingUshers.length === 0) return
+    setLoading(true)
+    setErrorMsg('')
+    try {
+      const usherIds = existingUshers.map(u => u.id).filter(Boolean) as string[]
+      if (usherIds.length > 0) {
+        await updateUshersBaseInfo(usherIds, baseInfo)
+      }
+      
+      const existing = await getExistingUshers(
+        baseInfo.province,
+        baseInfo.circuit,
+        baseInfo.congregation,
+        baseInfo.captain_name
+      )
+      setExistingUshers(existing as UsherData[])
+      setStep(2)
+      alert('¡Los datos del capitán se actualizaron correctamente para los acomodadores cargados!')
+    } catch (err: any) {
+      setErrorMsg('Error al actualizar datos: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -279,10 +306,21 @@ export default function PublicForm() {
           </div>
           
           {step === 1 && (
-            <div className="mt-8">
-              <button disabled={loading} type="submit" className="btn-primary w-full">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Siguiente Paso'}
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <button disabled={loading} type="submit" className="btn-primary flex-1">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (existingUshers.length > 0 ? 'Buscar con nuevos datos' : 'Siguiente Paso')}
               </button>
+              
+              {existingUshers.length > 0 && (
+                <button 
+                  disabled={loading} 
+                  type="button" 
+                  onClick={handleUpdateBaseInfo}
+                  className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all shadow-md flex-1 text-sm"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Actualizar estos datos en mis acomodadores'}
+                </button>
+              )}
             </div>
           )}
         </form>
