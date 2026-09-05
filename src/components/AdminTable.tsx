@@ -181,14 +181,17 @@ export default function AdminTable() {
 
   const filteredData = useMemo(() => {
     return data
-      .filter(u => 
-        u.province.toLowerCase().includes(filterProv.toLowerCase()) &&
-        u.circuit.toLowerCase().includes(filterCirc.toLowerCase()) &&
-        u.congregation.toLowerCase().includes(filterCong.toLowerCase()) &&
-        u.usher_name.toLowerCase().includes(filterName.toLowerCase()) &&
-        u.captain_name.toLowerCase().includes(filterCaptain.toLowerCase()) &&
-        (filterDay === '' || u.day === filterDay)
-      )
+      .filter(u => {
+        const normalizeStr = (str: string | null | undefined) => 
+          (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+        return normalizeStr(u.province).includes(normalizeStr(filterProv)) &&
+        normalizeStr(u.circuit).includes(normalizeStr(filterCirc)) &&
+        normalizeStr(u.congregation).includes(normalizeStr(filterCong)) &&
+        normalizeStr(u.usher_name).includes(normalizeStr(filterName)) &&
+        normalizeStr(u.captain_name).includes(normalizeStr(filterCaptain)) &&
+        (filterDay === '' || normalizeStr(u.day) === normalizeStr(filterDay))
+      })
       .sort((a, b) => {
         // Ordenar primero por día (Viernes, Sábado, Domingo)
         const dayA = DAY_ORDER[a.day.toLowerCase()] || 99

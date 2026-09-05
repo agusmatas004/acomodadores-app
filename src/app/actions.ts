@@ -4,19 +4,14 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function getExistingUshers(province: string, circuit: string, congregation: string, captainName: string) {
   // Limpiamos los inputs para evitar problemas de mayúsculas/minúsculas y espacios
-  const p = province.trim().toLowerCase()
-  const c = circuit.trim().toLowerCase()
-  const cong = congregation.trim().toLowerCase()
-  const cap = captainName.trim().toLowerCase()
+  const p = province.trim()
+  const c = circuit.trim()
+  const cong = congregation.trim()
+  const cap = captainName.trim()
 
   const { data, error } = await supabaseAdmin
     .from('ushers')
     .select('*')
-    // Usamos ilike para búsquedas case-insensitive en Supabase
-    .ilike('province', p)
-    .ilike('circuit', c)
-    .ilike('congregation', cong)
-    .ilike('captain_name', cap)
     .order('day', { ascending: true })
     .order('start_time', { ascending: true })
 
@@ -25,7 +20,17 @@ export async function getExistingUshers(province: string, circuit: string, congr
     return []
   }
 
-  return data || []
+  const removeAccents = (str: string | null | undefined) => 
+    (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+
+  const filteredData = (data || []).filter(u => 
+    removeAccents(u.province) === removeAccents(p) &&
+    removeAccents(u.circuit) === removeAccents(c) &&
+    removeAccents(u.congregation) === removeAccents(cong) &&
+    removeAccents(u.captain_name) === removeAccents(cap)
+  )
+
+  return filteredData
 }
 
 export async function saveUshers(ushersToInsert: any[]) {
