@@ -29,6 +29,13 @@ const DAY_ORDER: Record<string, number> = {
   'domingo': 3
 }
 
+const TIME_OPTIONS: string[] = []
+for (let h = 7; h <= 20; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    TIME_OPTIONS.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`)
+  }
+}
+
 export default function AdminTable() {
   const [data, setData] = useState<UsherData[]>([])
   const [loading, setLoading] = useState(true)
@@ -398,6 +405,7 @@ export default function AdminTable() {
                           <span className="text-xs font-medium text-slate-500 w-12">{d.substring(0,3)}</span>
                           <input 
                             type="time" 
+                            list="admin-preset-times"
                             className="w-full px-2 py-1 bg-white border border-emerald-200 rounded-md text-xs focus:ring-2 focus:ring-emerald-500 outline-none" 
                             value={newRowData.schedules?.[d]?.start_time || '08:00'} 
                             onChange={e => {
@@ -409,6 +417,7 @@ export default function AdminTable() {
                           />
                           <input 
                             type="time" 
+                            list="admin-preset-times"
                             className="w-full px-2 py-1 bg-white border border-emerald-200 rounded-md text-xs focus:ring-2 focus:ring-emerald-500 outline-none" 
                             value={newRowData.schedules?.[d]?.end_time || '10:00'} 
                             onChange={e => {
@@ -475,8 +484,8 @@ export default function AdminTable() {
                           {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                         <div className="flex gap-2">
-                          <input type="time" className="w-full px-2 py-1.5 bg-white border border-primary-200 rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none" value={editFormData.start_time} onChange={e => setEditFormData({...editFormData, start_time: e.target.value})} />
-                          <input type="time" className="w-full px-2 py-1.5 bg-white border border-primary-200 rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none" value={editFormData.end_time} onChange={e => setEditFormData({...editFormData, end_time: e.target.value})} />
+                          <input type="time" list="admin-preset-times" className="w-full px-2 py-1.5 bg-white border border-primary-200 rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none" value={editFormData.start_time} onChange={e => setEditFormData({...editFormData, start_time: e.target.value})} />
+                          <input type="time" list="admin-preset-times" className="w-full px-2 py-1.5 bg-white border border-primary-200 rounded-lg text-xs focus:ring-2 focus:ring-primary-500 outline-none" value={editFormData.end_time} onChange={e => setEditFormData({...editFormData, end_time: e.target.value})} />
                         </div>
                       </div>
                     </td>
@@ -608,6 +617,10 @@ export default function AdminTable() {
           Total: <span className="text-primary-600">{filteredData.length}</span> acomodadores
         </p>
       </div>
+
+      <datalist id="admin-preset-times">
+        {TIME_OPTIONS.map(t => <option key={t} value={t} />)}
+      </datalist>
 
     </div>
   )

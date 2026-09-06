@@ -13,7 +13,9 @@ import {
   Edit2, 
   Check, 
   X, 
-  Phone 
+  Phone,
+  Sliders,
+  List
 } from 'lucide-react'
 import { 
   getExistingUshers, 
@@ -57,7 +59,7 @@ type UsherData = {
 
 type FormUsherData = Partial<UsherData & { 
   days: string[]
-  schedules: Record<string, { start_time: string, end_time: string }>
+  schedules: Record<string, { start_time: string, end_time: string, is_custom?: boolean }>
 }>
 
 export default function PublicForm() {
@@ -79,6 +81,7 @@ export default function PublicForm() {
   // Estado para la edición de acomodadores ya cargados
   const [editingUsherId, setEditingUsherId] = useState<string | null>(null)
   const [editingFormData, setEditingFormData] = useState<Partial<UsherData>>({})
+  const [editingIsCustom, setEditingIsCustom] = useState(false)
   const [savingEditId, setSavingEditId] = useState<string | null>(null)
   const [deletingUsherId, setDeletingUsherId] = useState<string | null>(null)
 
@@ -94,7 +97,7 @@ export default function PublicForm() {
         baseInfo.captain_name
       )
       setExistingUshers(existing as UsherData[])
-      setNewUshers([{ usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, phone: '' }])
+      setNewUshers([{ usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00', is_custom: false } }, phone: '' }])
       setStep(2)
     } catch (err: any) {
       setErrorMsg('Error al verificar datos: ' + err.message)
@@ -132,13 +135,17 @@ export default function PublicForm() {
 
   // Iniciar edición de un acomodador existente
   const handleStartEdit = (usher: UsherData) => {
+    const sTime = (usher.start_time || '08:00').substring(0, 5)
+    const eTime = (usher.end_time || '10:00').substring(0, 5)
+    const isCustom = !TIME_OPTIONS.includes(sTime) || !TIME_OPTIONS.includes(eTime)
+    setEditingIsCustom(isCustom)
     setEditingUsherId(usher.id || null)
     setEditingFormData({
       usher_name: usher.usher_name,
       sector: usher.sector || '',
       day: usher.day,
-      start_time: (usher.start_time || '08:00').substring(0, 5),
-      end_time: (usher.end_time || '10:00').substring(0, 5),
+      start_time: sTime,
+      end_time: eTime,
       phone: usher.phone || ''
     })
   }
@@ -146,6 +153,7 @@ export default function PublicForm() {
   const handleCancelEdit = () => {
     setEditingUsherId(null)
     setEditingFormData({})
+    setEditingIsCustom(false)
   }
 
   // Guardar cambios en un acomodador existente
@@ -217,7 +225,7 @@ export default function PublicForm() {
   const handleAddRow = () => {
     setNewUshers([
       ...newUshers,
-      { usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00' } }, phone: '' }
+      { usher_name: '', sector: '', days: ['Viernes'], schedules: { 'Viernes': { start_time: '08:00', end_time: '10:00', is_custom: false } }, phone: '' }
     ])
   }
 
@@ -235,9 +243,30 @@ export default function PublicForm() {
     const updated = [...newUshers]
     const schedules = { ...updated[index].schedules }
     if (!schedules[day]) {
-      schedules[day] = { start_time: '08:00', end_time: '10:00' }
+      schedules[day] = { start_time: '08:00', end_time: '10:00', is_custom: false }
     }
-    schedules[day][field] = value
+    if (value === '__custom__') {
+      schedules[day] = { ...schedules[day], is_custom: true }
+    } else {
+      schedules[day] = { ...schedules[day], [field]: value }
+    }
+    updated[index] = { ...updated[index], schedules }
+    setNewUshers(updated)
+  }
+
+  const handleToggleCustomSchedule = (index: number, day: string) => {
+    const updated = [...newUshers]
+    const schedules = { ...updated[index].schedules }
+    const current = schedules[day] || { start_time: '08:00', end_time: '10:00', is_custom: false }
+    const isCurrentlyCustom = !!current.is_custom || !TIME_OPTIONS.includes(current.start_time) || !TIME_OPTIONS.includes(current.end_time)
+    
+    const willBeCustom = !isCurrentlyCustom
+    schedules[day] = {
+      ...current,
+      is_custom: willBeCustom,
+      start_time: willBeCustom ? current.start_time : (TIME_OPTIONS.includes(current.start_time) ? current.start_time : '08:00'),
+      end_time: willBeCustom ? current.end_time : (TIME_OPTIONS.includes(current.end_time) ? current.end_time : '10:00')
+    }
     updated[index] = { ...updated[index], schedules }
     setNewUshers(updated)
   }
@@ -539,24 +568,85 @@ export default function PublicForm() {
                           </div>
 
                           <div className="md:col-span-4">
-                            <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Horario</label>
-                            <div className="flex items-center gap-1.5">
-                              <select
-                                className="input-field py-1.5 text-sm bg-white flex-1"
-                                value={editingFormData.start_time || '08:00'}
-                                onChange={(e) => setEditingFormData({ ...editingFormData, start_time: e.target.value })}
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-bold text-slate-500 uppercase">Horario</label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const willBeCustom = !editingIsCustom
+                                  setEditingIsCustom(willBeCustom)
+                                  if (!willBeCustom) {
+                                    if (!TIME_OPTIONS.includes(editingFormData.start_time || '')) {
+                                      setEditingFormData(prev => ({ ...prev, start_time: '08:00' }))
+                                    }
+                                    if (!TIME_OPTIONS.includes(editingFormData.end_time || '')) {
+                                      setEditingFormData(prev => ({ ...prev, end_time: '10:00' }))
+                                    }
+                                  }
+                                }}
+                                className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 transition-colors flex items-center gap-1"
                               >
-                                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                              </select>
-                              <span className="text-slate-400 text-xs">-</span>
-                              <select
-                                className="input-field py-1.5 text-sm bg-white flex-1"
-                                value={editingFormData.end_time || '10:00'}
-                                onChange={(e) => setEditingFormData({ ...editingFormData, end_time: e.target.value })}
-                              >
-                                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                              </select>
+                                {editingIsCustom ? (
+                                  <>
+                                    <List className="w-3 h-3" /> Usar lista
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sliders className="w-3 h-3" /> Personalizar
+                                  </>
+                                )}
+                              </button>
                             </div>
+
+                            {editingIsCustom ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="time"
+                                  className="input-field py-1.5 text-sm bg-white flex-1"
+                                  value={editingFormData.start_time || '08:00'}
+                                  onChange={(e) => setEditingFormData({ ...editingFormData, start_time: e.target.value })}
+                                />
+                                <span className="text-slate-400 text-xs">-</span>
+                                <input
+                                  type="time"
+                                  className="input-field py-1.5 text-sm bg-white flex-1"
+                                  value={editingFormData.end_time || '10:00'}
+                                  onChange={(e) => setEditingFormData({ ...editingFormData, end_time: e.target.value })}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  className="input-field py-1.5 text-sm bg-white flex-1"
+                                  value={editingFormData.start_time || '08:00'}
+                                  onChange={(e) => {
+                                    if (e.target.value === '__custom__') {
+                                      setEditingIsCustom(true)
+                                    } else {
+                                      setEditingFormData({ ...editingFormData, start_time: e.target.value })
+                                    }
+                                  }}
+                                >
+                                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                  <option value="__custom__">⚙️ Personalizado...</option>
+                                </select>
+                                <span className="text-slate-400 text-xs">-</span>
+                                <select
+                                  className="input-field py-1.5 text-sm bg-white flex-1"
+                                  value={editingFormData.end_time || '10:00'}
+                                  onChange={(e) => {
+                                    if (e.target.value === '__custom__') {
+                                      setEditingIsCustom(true)
+                                    } else {
+                                      setEditingFormData({ ...editingFormData, end_time: e.target.value })
+                                    }
+                                  }}
+                                >
+                                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                  <option value="__custom__">⚙️ Personalizado...</option>
+                                </select>
+                              </div>
+                            )}
                           </div>
 
                           <div className="md:col-span-4">
@@ -683,7 +773,7 @@ export default function PublicForm() {
                                 const newDays = [...currentDays, d]
                                 const newSchedules = { ...usher.schedules }
                                 if (!newSchedules[d]) {
-                                  newSchedules[d] = { start_time: '08:00', end_time: '10:00' }
+                                  newSchedules[d] = { start_time: '08:00', end_time: '10:00', is_custom: false }
                                 }
                                 const updated = [...newUshers]
                                 updated[index] = { ...updated[index], days: newDays, schedules: newSchedules }
@@ -701,26 +791,77 @@ export default function PublicForm() {
 
                   <div className="md:col-span-6">
                     <div className="flex flex-col gap-2">
-                      {(usher.days || ['Viernes']).map(d => (
-                        <div key={d} className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-500 w-16">{d}</span>
-                          <select 
-                            className="input-field py-1 text-sm flex-1"
-                            value={usher.schedules?.[d]?.start_time || '08:00'}
-                            onChange={e => handleScheduleChange(index, d, 'start_time', e.target.value)}
-                          >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                          <span className="text-slate-400 text-xs">-</span>
-                          <select 
-                            className="input-field py-1 text-sm flex-1"
-                            value={usher.schedules?.[d]?.end_time || '10:00'}
-                            onChange={e => handleScheduleChange(index, d, 'end_time', e.target.value)}
-                          >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </div>
-                      ))}
+                      {(usher.days || ['Viernes']).map(d => {
+                        const sched = usher.schedules?.[d] || { start_time: '08:00', end_time: '10:00', is_custom: false }
+                        const isCustom = !!sched.is_custom || !TIME_OPTIONS.includes(sched.start_time) || !TIME_OPTIONS.includes(sched.end_time)
+
+                        return (
+                          <div key={d} className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-500 w-16 shrink-0">{d}</span>
+                            
+                            {isCustom ? (
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <input 
+                                  type="time"
+                                  className="input-field py-1 px-2 text-xs sm:text-sm flex-1 min-w-0 bg-white"
+                                  value={sched.start_time || '08:00'}
+                                  onChange={e => handleScheduleChange(index, d, 'start_time', e.target.value)}
+                                />
+                                <span className="text-slate-400 text-xs">-</span>
+                                <input 
+                                  type="time"
+                                  className="input-field py-1 px-2 text-xs sm:text-sm flex-1 min-w-0 bg-white"
+                                  value={sched.end_time || '10:00'}
+                                  onChange={e => handleScheduleChange(index, d, 'end_time', e.target.value)}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <select 
+                                  className="input-field py-1 px-1.5 text-xs sm:text-sm flex-1 min-w-0 bg-white"
+                                  value={sched.start_time || '08:00'}
+                                  onChange={e => handleScheduleChange(index, d, 'start_time', e.target.value)}
+                                >
+                                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                  <option value="__custom__">⚙️ Personalizado...</option>
+                                </select>
+                                <span className="text-slate-400 text-xs">-</span>
+                                <select 
+                                  className="input-field py-1 px-1.5 text-xs sm:text-sm flex-1 min-w-0 bg-white"
+                                  value={sched.end_time || '10:00'}
+                                  onChange={e => handleScheduleChange(index, d, 'end_time', e.target.value)}
+                                >
+                                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                  <option value="__custom__">⚙️ Personalizado...</option>
+                                </select>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCustomSchedule(index, d)}
+                              title={isCustom ? "Cambiar a lista predefinida" : "Ingresar horario personalizado"}
+                              className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-all shrink-0 ${
+                                isCustom 
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 font-medium' 
+                                  : 'bg-white text-slate-500 border-slate-200 hover:text-primary-600 hover:border-primary-200'
+                              }`}
+                            >
+                              {isCustom ? (
+                                <>
+                                  <List className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline text-[11px]">Lista</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sliders className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline text-[11px]">Libre</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                   
@@ -754,6 +895,9 @@ export default function PublicForm() {
             </button>
           </div>
 
+          <datalist id="predefined-times">
+            {TIME_OPTIONS.map(t => <option key={t} value={t} />)}
+          </datalist>
         </div>
       )}
     </div>
